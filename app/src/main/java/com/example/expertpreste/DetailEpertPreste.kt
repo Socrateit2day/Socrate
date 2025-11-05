@@ -1,6 +1,5 @@
 package com.example.expertpreste
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -8,27 +7,26 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.text.SimpleDateFormat
+import coil.compose.AsyncImage
+import com.example.expertpreste.Api.Prestataire
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpertDetailScreen(
-    expert: Expert,
-    onNavigateBack: () -> Unit,
-    showHistory: Boolean = true
+    expert: Prestataire,
+    onNavigateBack: () -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var demandeEffectuee by remember { mutableStateOf(false) }
@@ -36,20 +34,10 @@ fun ExpertDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        "Profil de l’expert",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                },
+                title = { Text("Profil de l’expert", fontSize = 20.sp, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Retour"
-                        )
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Retour")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF7F9FC))
@@ -62,82 +50,95 @@ fun ExpertDetailScreen(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .background(Color(0xFFF7F9FC))
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(id = expert.imageRes),
-                contentDescription = expert.name,
-                contentScale = ContentScale.Crop,
+            AsyncImage(
+                model = expert.photo ?: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+                contentDescription = "${expert.user.first_name} ${expert.user.last_name}",
                 modifier = Modifier
                     .size(110.dp)
-                    .clip(CircleShape)
+                    .clip(CircleShape),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
             )
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(expert.name, fontSize = 21.sp, fontWeight = FontWeight.Bold)
-            Text(expert.job, fontSize = 17.sp, color = Color.Gray)
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = expert.titre,
-                color = Color(0xFF26A69A),
-                fontWeight = FontWeight.Medium,
-                fontSize = 15.sp
+                text = "${expert.user.first_name} ${expert.user.last_name}",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(14.dp))
-
+            Text(
+                text = expert.jobcategorie?.nom ?: "Non spécifié",
+                fontSize = 15.sp,
+                color = Color.Gray
+            )
+            Text(
+                text = expert.recipient_type,
+                fontSize = 15.sp,
+                color = Color(0xFF26A69A),
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(4.dp)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    InfoItem("Description", expert.description)
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Divider()
-                    InfoItem("Compétences", expert.competences)
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Divider()
-                    if (showHistory) {
-                        InfoItemWithStatus("Dernière prestation", SimpleDateFormat("dd/MM/yyyy").format(expert.dernierePrestation))
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Divider()
-                        InfoItemWithStatus("Statut de la prestation", expert.statutPrestation)
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Divider()
-                    }
-                    InfoItem("Adresse", expert.localite.afficherAdresse())
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Divider()
-                    InfoItem("Expérience", expert.experience)
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Divider()
-                    InfoItem("⭐ Note moyenne", "%.1f / 5  (%d avis)".format(expert.rating, expert.nbRatings))
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Divider()
-                    InfoItem("Services proposés", expert.services)
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Divider()
-                    InfoItem("Tarif", "${expert.montant} Fbu")
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Divider()
-                    InfoItem("Gmail", expert.gmail)
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Divider()
-                    InfoItem("Disponibilités", expert.disponibilites)
+
+                    InfoItem(
+                        "Compétences / Domaines",
+                        if (expert.prestataire_besoins.isNotEmpty())
+                            expert.prestataire_besoins.joinToString { it.besoin_nom }
+                        else "Non précisé"
+                    )
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    InfoItem("Expérience", "Non précisé")
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    InfoItem(
+                        "Services proposés",
+                        if (expert.prestataire_besoins.isNotEmpty())
+                            expert.prestataire_besoins.joinToString { it.description }
+                        else "Non spécifié"
+                    )
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    Text(
+                        text = "⭐ Note estimée: ${(expert.is_visited % 5).toInt()}.0 / 5",
+                        color = Color(0xFF26A69A),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    InfoItem("Tarif", expert.tarif ?: "Non précisé")
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    InfoItem("Disponibilités", if (expert.user.is_active) "Disponible" else "Non disponible")
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    InfoItem(
+                        "Localisation",
+                        "${expert.user.province_name} / ${expert.user.commune_name} / ${expert.user.zone_name} / ${expert.user.colline_name}"
+                    )
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    InfoItem("Description", expert.personal_description ?: "Non spécifié")
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
                 }
             }
 
             Spacer(modifier = Modifier.height(25.dp))
 
-            if (expert.estDisponible && !demandeEffectuee) {
+            if (!demandeEffectuee) {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "Expert disponible (${expert.disponibilites})",
+                        text = "Expert disponible",
                         color = Color(0xFF00897B),
                         fontWeight = FontWeight.Bold
                     )
@@ -147,7 +148,7 @@ fun ExpertDetailScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF26A69A)),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text(if (showHistory) "Redemander un service" else "Demander un service")
+                        Text("Sélectionner cet expert")
                     }
                 }
             } else {
@@ -157,10 +158,7 @@ fun ExpertDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = if (demandeEffectuee)
-                            "Cet expert n’est plus disponible"
-                        else
-                            "Expert non disponible pour le moment",
+                        text = "Cet expert n’est plus disponible",
                         color = Color.Red,
                         fontWeight = FontWeight.Bold
                     )
@@ -170,7 +168,7 @@ fun ExpertDetailScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text(if (showHistory) "Redemander un service" else "Demander un service")
+                        Text("Sélectionner cet expert")
                     }
                 }
             }
@@ -191,7 +189,7 @@ fun ExpertDetailScreen(
 
 @Composable
 fun DemandeServiceDialog(
-    expert: Expert,
+    expert: Prestataire,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
@@ -202,24 +200,23 @@ fun DemandeServiceDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = painterResource(id = expert.imageRes),
-                    contentDescription = expert.name,
-                    modifier = Modifier
-                        .size(55.dp)
-                        .clip(CircleShape)
+                AsyncImage(
+                    model = expert.photo ?: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+                    contentDescription = "${expert.user.first_name} ${expert.user.last_name}",
+                    modifier = Modifier.size(55.dp).clip(CircleShape)
                 )
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text(expert.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text(expert.job, fontSize = 14.sp, color = Color.Gray)
+                    Text("${expert.user.first_name} ${expert.user.last_name}", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(text = expert.jobcategorie?.nom ?: "Non spécifié", fontSize = 15.sp, color = Color.Gray)
+                    Text(expert.recipient_type, fontSize = 14.sp, color = Color.Gray)
                 }
             }
         },
         text = {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    "Service demandé : ${expert.services}",
+                    "Service demandé : ${expert.prestataire_besoins.joinToString { it.besoin_nom }}",
                     fontWeight = FontWeight.Medium,
                     color = Color(0xFF26A69A),
                     fontSize = 14.sp
@@ -227,10 +224,7 @@ fun DemandeServiceDialog(
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = commentaire,
-                    onValueChange = {
-                        commentaire = it
-                        showError = false
-                    },
+                    onValueChange = { commentaire = it; showError = false },
                     label = { Text("Votre commentaire *") },
                     placeholder = { Text("Ajoutez un message pour cet expert") },
                     modifier = Modifier.fillMaxWidth(),
@@ -239,29 +233,19 @@ fun DemandeServiceDialog(
                 )
                 if (showError) {
                     Spacer(Modifier.height(6.dp))
-                    Text(
-                        "⚠️ Le commentaire est obligatoire.",
-                        color = Color.Red,
-                        fontSize = 13.sp
-                    )
+                    Text("⚠️ Le commentaire est obligatoire.", color = Color.Red, fontSize = 13.sp)
                 }
             }
         },
         confirmButton = {
             Button(
-                onClick = {
-                    if (commentaire.isNotBlank()) onConfirm() else showError = true
-                },
+                onClick = { if (commentaire.isNotBlank()) onConfirm() else showError = true },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF26A69A)),
                 shape = RoundedCornerShape(10.dp)
-            ) {
-                Text("Demander")
-            }
+            ) { Text("Demander") }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Annuler", color = Color.Gray)
-            }
+            TextButton(onClick = onDismiss) { Text("Annuler", color = Color.Gray) }
         }
     )
 }
@@ -273,21 +257,6 @@ fun InfoItem(title: String, content: String) {
         text = content,
         fontSize = 14.sp,
         color = Color.DarkGray,
-        textAlign = TextAlign.Justify,
-        modifier = Modifier.padding(vertical = 4.dp)
-    )
-}
-
-@Composable
-fun InfoItemWithStatus(title: String, status: String) {
-    val statusColor =
-        if (status == "Terminé") Color(0xFF388E3C) else Color(0xFFF57C00)
-    Text(title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-    Text(
-        text = status,
-        fontSize = 14.sp,
-        color = statusColor,
-        fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Justify,
         modifier = Modifier.padding(vertical = 4.dp)
     )
