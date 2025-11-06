@@ -9,10 +9,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -56,15 +54,20 @@ fun AppNavigator() {
         composable("experts_list") {
             ExpertsScreen(navController = navController, expertsState = expertsState)
         }
-        composable("expert_detail/{expertIndex}") { backStackEntry ->
-            val index = backStackEntry.arguments?.getString("expertIndex")?.toIntOrNull() ?: 0
-            if (expertsState.value.isNotEmpty()) {
+        composable("expert_detail_id/{expertId}") { backStackEntry ->
+            val expertId = backStackEntry.arguments?.getString("expertId")?.toIntOrNull()
+            val expert = expertsState.value.find { it.user.id == expertId }
+
+            if (expert != null) {
                 ExpertDetailScreen(
-                    expert = expertsState.value[index],
+                    expert = expert,
                     onNavigateBack = { navController.popBackStack() }
                 )
+            } else {
+                navController.popBackStack()
             }
         }
+
         composable("other_experts") {
             OtherExpertsScreen(navController = navController, experts = expertsState.value)
         }
