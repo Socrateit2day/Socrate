@@ -2,6 +2,7 @@ package com.example.expertpreste
 
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -24,14 +25,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import coil.compose.AsyncImage
-import com.example.expertpreste.Api.Prestataire
-import com.example.expertpreste.Api.RetrofitInstance
+import com.example.expertpreste.Api.*
 import com.example.expertpreste.ui.theme.ExpertPresteTheme
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
@@ -44,19 +48,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
 @Composable
 fun AppNavigator() {
     val navController = rememberNavController()
     val expertsState = remember { mutableStateOf<List<Prestataire>>(emptyList()) }
 
-    NavHost(navController = navController, startDestination = "experts_list") {
+    NavHost(navController = navController, startDestination = "login") {
+        // --- Login screen en premier ---
+        composable("login") {
+            LoginScreen(navController)
+        }
+
+        // --- Liste des experts ---
         composable("experts_list") {
             ExpertsScreen(navController = navController, expertsState = expertsState)
         }
+
+        // --- Détail expert ---
         composable("expert_detail_id/{expertId}") { backStackEntry ->
             val expertId = backStackEntry.arguments?.getString("expertId")?.toIntOrNull()
-            val expert = expertsState.value.find { it.user.id == expertId }
+            val expert = expertId?.let { expertsState.value.find { it.user.id == expertId  } }
 
             if (expert != null) {
                 ExpertDetailScreen(
@@ -64,16 +75,35 @@ fun AppNavigator() {
                     onNavigateBack = { navController.popBackStack() }
                 )
             } else {
-                navController.popBackStack()
+                navController.popBackStack("experts_list", false) // Ajouter un retour explicite
             }
         }
 
+        // --- Sélectionner expert ---
+        composable(
+            route = "selectionner_expert_preste/{expertId}",
+            arguments = listOf(navArgument("expertId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val expertId = backStackEntry.arguments?.getString("expertId")?.toIntOrNull()
+            val expert = expertId?.let { expertsState.value.find { it.user.id == expertId  } }
+
+            if (expert != null) {
+                SelectionnerExpertPreste(
+                    navController = navController,
+                    expert = expert,
+                    allExperts = expertsState.value
+                )
+            } else {
+                navController.popBackStack("experts_list", false) // Ajouter un retour explicite
+            }
+        }
+
+        // --- Autres experts ---
         composable("other_experts") {
             OtherExpertsScreen(navController = navController, experts = expertsState.value)
         }
     }
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpertsScreen(navController: NavController, expertsState: MutableState<List<Prestataire>>) {

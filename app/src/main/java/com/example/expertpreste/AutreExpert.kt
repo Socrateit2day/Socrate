@@ -289,7 +289,7 @@ fun FilterColumnItem(text: String, isSelected: Boolean, onClick: () -> Unit) {
 fun ExpertItem(expert: Prestataire, navController: NavController) {
     val buttonColor = Color(0xFF26A69A)
     val rating = (expert.is_visited % 5).toInt()
-    var showDialog by remember { mutableStateOf(false) }
+    // 'showDialog' a été supprimé
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -356,7 +356,8 @@ fun ExpertItem(expert: Prestataire, navController: NavController) {
                 Spacer(Modifier.width(8.dp))
 
                 OutlinedButton(
-                    onClick = { showDialog = true },
+                    // MODIFIÉ : Naviguer vers le nouvel écran
+                    onClick = { navController.navigate("selectionner_expert_preste/${expert.user.id}") },
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = buttonColor),
                     border = BorderStroke(1.dp, buttonColor),
@@ -370,78 +371,6 @@ fun ExpertItem(expert: Prestataire, navController: NavController) {
             }
         }
 
-        if (showDialog) {
-            DemandeServiceDialog(
-                expert = expert,
-                onDismiss = { showDialog = false },
-                onConfirm = { showDialog = false }
-            )
-        }
+        // SUPPRIMÉ : Le bloc 'if (showDialog)' et le composable 'DemandeServiceDialog'
     }
-}
-
-@Composable
-fun DemandeServiceDialog(
-    expert: Prestataire,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    var commentaire by remember { mutableStateOf("") }
-    var showError by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AsyncImage(
-                    model = expert.photo ?: "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-                    contentDescription = "${expert.user.first_name} ${expert.user.last_name}",
-                    modifier = Modifier
-                        .size(55.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text("${expert.user.first_name} ${expert.user.last_name}", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text(text = expert.jobcategorie?.nom ?: "Non spécifié", fontSize = 15.sp, color = Color.Gray)
-                    Text(expert.recipient_type, fontSize = 14.sp, color = Color.Gray)
-                }
-            }
-        },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    "Service demandé : ${expert.prestataire_besoins.joinToString { it.besoin_nom }}",
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF26A69A),
-                    fontSize = 14.sp
-                )
-                Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = commentaire,
-                    onValueChange = { commentaire = it; showError = false },
-                    label = { Text("Votre commentaire *") },
-                    placeholder = { Text("Ajoutez un message pour cet expert") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp),
-                    maxLines = 4
-                )
-                if (showError) {
-                    Spacer(Modifier.height(6.dp))
-                    Text("⚠️ Le commentaire est obligatoire.", color = Color.Red, fontSize = 13.sp)
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { if (commentaire.isNotBlank()) onConfirm() else showError = true },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF26A69A)),
-                shape = RoundedCornerShape(10.dp)
-            ) { Text("Demander") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Annuler", color = Color.Gray) }
-        }
-    )
 }
